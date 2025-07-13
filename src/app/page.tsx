@@ -17,8 +17,8 @@ import { Scale, Search, BookUser, Gavel, FileText, FileSignature, TriangleAlert,
 import { Skeleton } from "@/components/ui/skeleton";
 
 const formSchema = z.object({
-  legalQuestion: z.string().min(10, {
-    message: "Your question must be at least 10 characters long.",
+  legalQuestion: z.string().min(1, {
+    message: "Please enter a question.",
   }),
 });
 
