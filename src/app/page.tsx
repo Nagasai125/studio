@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Scale, Search, BookUser, Gavel, FileText, FileSignature, TriangleAlert, Link as LinkIcon, Loader2, Upload, MessageSquareText, ShieldAlert } from "lucide-react";
+import { Scale, Search, BookUser, Gavel, FileText, FileSignature, TriangleAlert, Link as LinkIcon, Loader2, Upload, MessageSquareText, ShieldAlert, Car } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -39,7 +39,7 @@ const topics = [
   { name: "Tenant and renter rights", icon: BookUser, query: "What are my rights and responsibilities as a tenant?" },
   { name: "Small claims court procedures", icon: Gavel, query: "Explain the process of small claims court." },
   { name: "Residential lease agreements", icon: FileText, query: "What are the key elements of a residential lease agreement?" },
-  { name: "Basics of contract law", icon: FileSignature, query: "Summarize the basics of contract law." },
+  { name: "Traffic violations", icon: Car, query: "What should I do if I get a speeding ticket?" },
 ];
 
 export default function LegalEasePage() {
@@ -328,7 +328,7 @@ export default function LegalEasePage() {
                       name="file"
                       render={() => (
                         <FormItem>
-                          <Label htmlFor="file-upload" className="font-semibold">Upload Lease Agreement</Label>
+                          <Label htmlFor="file-upload" className="font-semibold">Upload Document</Label>
                           <FormControl>
                             <div className="relative">
                               <Input
@@ -402,7 +402,7 @@ export default function LegalEasePage() {
                     ) : (
                       <Card className="mt-8 w-full shadow-lg">
                         <CardHeader>
-                          <CardTitle className="text-2xl font-headline">Key Clause Summary</CardTitle>
+                          <CardTitle className="text-2xl font-headline">Document Analysis</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 text-foreground/90">
                            {docAnalysis.summary?.split('\n\n').flatMap(p => p.split('\n')).map((paragraph, index) => (

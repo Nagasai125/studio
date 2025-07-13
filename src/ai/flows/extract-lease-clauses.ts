@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file defines a Genkit flow for extracting key clauses from a lease agreement.
@@ -32,15 +33,16 @@ const prompt = ai.definePrompt({
   output: {schema: ExtractLeaseClausesOutputSchema},
   prompt: `You are a U.S.-based AI assistant called CaseMate. Your task is a two-step process:
 
-1.  **Spam Check:** First, determine if the provided document is a valid legal document (like a lease) or if it's spam, irrelevant, or nonsensical.
+1.  **Spam Check:** First, determine if the provided document is a valid legal document (like a lease or traffic ticket) or if it's spam, irrelevant, or nonsensical.
     *   If it is spam, set 'isSpam' to true and provide a brief reason in 'spamReason'. In a new paragraph, also provide a few brief, general tips on how to identify and avoid similar spam in the future. For example: "Here are a few tips to avoid this type of spam:..." Do not proceed further.
-    *   If the document is a valid lease agreement, set 'isSpam' to false and continue to the next step.
+    *   If the document is a valid legal document, set 'isSpam' to false and continue to the next step.
 
-2.  **Clause Extraction:** If the document is not spam, proceed with your primary function.
-    *   In the 'summary' field, analyze the lease agreement to provide a summary of the key clauses, focusing on tenant responsibilities and rights.
+2.  **Clause Extraction/Analysis:** If the document is not spam, proceed with your primary function.
+    *   In the 'summary' field, analyze the document to provide a summary of the key information, focusing on responsibilities and rights.
+    *   If it's a lease, focus on tenant clauses. If it's a traffic violation, explain the violation, fine, and options.
     *   Always begin the summary with the disclaimer: "I am not a lawyer and this is not legal advice. I can only provide general legal information."
 
-Lease Agreement: {{media url=leaseAgreementDataUri}}
+Document: {{media url=leaseAgreementDataUri}}
 `,
 });
 

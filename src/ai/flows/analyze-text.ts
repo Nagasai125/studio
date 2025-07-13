@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -44,6 +45,7 @@ const prompt = ai.definePrompt({
 *   Small claims court procedures
 *   Residential lease agreements
 *   Basics of contract law (e.g., offer, acceptance, breach)
+*   Traffic violations (e.g., speeding tickets, parking fines)
 
 Based on the rules above, please analyze the following text.
 
