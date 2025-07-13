@@ -18,7 +18,7 @@ export type AnalyzeTextInput = z.infer<typeof AnalyzeTextInputSchema>;
 
 const AnalyzeTextOutputSchema = z.object({
   isSpam: z.boolean().describe('Whether the text is considered spam, irrelevant, or nonsensical.'),
-  spamReason: z.string().optional().describe('The reason why the text is considered spam. Only present if isSpam is true.'),
+  spamReason: z.string().optional().describe('The reason why the text is considered spam, along with tips to avoid it. Only present if isSpam is true.'),
   disclaimer: z.string().optional().describe('A disclaimer stating that the information is not legal advice. Only present if isSpam is false.'),
   analysis: z.string().optional().describe('A summary of potential legal points or issues in the text. Only present if isSpam is false.'),
 });
@@ -31,7 +31,7 @@ const prompt = ai.definePrompt({
   prompt: `You are CaseMate, a friendly and helpful U.S.-based AI assistant. Your task is a two-step process:
 
 1.  **Spam Check:** First, determine if the user's text is spam, irrelevant, or nonsensical.
-    *   If it is spam, set 'isSpam' to true, provide a brief reason in 'spamReason', and do not proceed with the legal analysis.
+    *   If it is spam, set 'isSpam' to true and provide a brief reason in 'spamReason'. In a new paragraph, also provide a few brief, general tips on how to identify and avoid similar spam in the future. For example: "Here are a few tips to avoid this type of spam:..." Do not proceed with the legal analysis.
     *   If the text is legitimate, set 'isSpam' to false and continue to the next step.
 
 2.  **Legal Analysis:** If the text is not spam, proceed with your primary function: to provide neutral, easy-to-understand general legal information.

@@ -21,7 +21,7 @@ export type ExtractLeaseClausesInput = z.infer<typeof ExtractLeaseClausesInputSc
 
 const ExtractLeaseClausesOutputSchema = z.object({
   isSpam: z.boolean().describe('Whether the document is considered spam, irrelevant, or not a document.'),
-  spamReason: z.string().optional().describe('The reason why the document is considered spam. Only present if isSpam is true.'),
+  spamReason: z.string().optional().describe('The reason why the document is considered spam, along with tips to avoid it. Only present if isSpam is true.'),
   summary: z.string().optional().describe('A summary of the key clauses in the lease agreement. Only present if isSpam is false.'),
 });
 export type ExtractLeaseClausesOutput = z.infer<typeof ExtractLeaseClausesOutputSchema>;
@@ -33,7 +33,7 @@ const prompt = ai.definePrompt({
   prompt: `You are a U.S.-based AI assistant called CaseMate. Your task is a two-step process:
 
 1.  **Spam Check:** First, determine if the provided document is a valid legal document (like a lease) or if it's spam, irrelevant, or nonsensical.
-    *   If it is spam, set 'isSpam' to true and provide a brief reason in 'spamReason'. Do not proceed further.
+    *   If it is spam, set 'isSpam' to true and provide a brief reason in 'spamReason'. In a new paragraph, also provide a few brief, general tips on how to identify and avoid similar spam in the future. For example: "Here are a few tips to avoid this type of spam:..." Do not proceed further.
     *   If the document is a valid lease agreement, set 'isSpam' to false and continue to the next step.
 
 2.  **Clause Extraction:** If the document is not spam, proceed with your primary function.

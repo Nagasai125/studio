@@ -169,8 +169,10 @@ export default function LegalEasePage() {
           <CardTitle className="text-2xl font-headline text-destructive">Content Flagged</CardTitle>
         </div>
       </CardHeader>
-      <CardContent>
-        <p className="text-foreground/90">{reason || "This content was flagged as irrelevant or spam and could not be processed."}</p>
+      <CardContent className="space-y-4 text-foreground/90">
+        {reason ? reason.split('\n').map((paragraph, index) => (
+          <p key={index}>{paragraph}</p>
+        )) : <p>This content was flagged as irrelevant or spam and could not be processed.</p>}
       </CardContent>
     </Card>
   );
