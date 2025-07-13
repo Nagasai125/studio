@@ -319,7 +319,7 @@ export default function LegalEasePage() {
                                 type="file"
                                 className="hidden"
                                 onChange={handleFileChange}
-                                accept=".pdf,.doc,.docx,.txt"
+                                accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
                                 disabled={isLoadingDocAnalysis}
                               />
                               <Label
