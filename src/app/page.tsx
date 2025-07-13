@@ -31,7 +31,7 @@ const fileUploadSchema = z.object({
 });
 
 const textAnalysisSchema = z.object({
-  textToAnalyze: z.string().min(10, "Please enter at least 10 characters to analyze."),
+  textToAnalyze: z.string().min(1, "Please enter some text to analyze."),
 });
 
 const topics = [
