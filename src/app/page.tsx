@@ -143,7 +143,7 @@ export default function LegalEasePage() {
   
   const handleTopicClick = (query: string) => {
     legalQuestionForm.setValue("legalQuestion", query);
-    legalQuestionForm.handleSubmit(onLegalQuestionSubmit)();
+    onLegalQuestionSubmit({ legalQuestion: query });
   };
 
   const ResultSkeleton = () => (
@@ -477,14 +477,16 @@ export default function LegalEasePage() {
                       <SpamCard reason={textAnalysis.spamReason} />
                     ) : (
                       <Card className="mt-8 w-full shadow-lg">
-                        <CardHeader>
-                          <Alert className="border-accent border-l-4 rounded-r-lg bg-accent/10">
-                            <TriangleAlert className="h-4 w-4 text-accent-foreground" />
-                            <AlertTitle className="font-semibold text-accent-foreground">Disclaimer</AlertTitle>
-                            <AlertDescription>{textAnalysis.disclaimer}</AlertDescription>
-                          </Alert>
-                        </CardHeader>
-                        <CardContent>
+                        {textAnalysis.disclaimer &&
+                          <CardHeader>
+                            <Alert className="border-accent border-l-4 rounded-r-lg bg-accent/10">
+                              <TriangleAlert className="h-4 w-4 text-accent-foreground" />
+                              <AlertTitle className="font-semibold text-accent-foreground">Disclaimer</AlertTitle>
+                              <AlertDescription>{textAnalysis.disclaimer}</AlertDescription>
+                            </Alert>
+                          </CardHeader>
+                        }
+                        <CardContent className={!textAnalysis.disclaimer ? "pt-6" : ""}>
                           <CardTitle className="mb-4 text-2xl font-headline">Analysis</CardTitle>
                           <div className="space-y-4 text-foreground/90">
                             {textAnalysis.analysis?.split('\n\n').flatMap(p => p.split('\n')).map((paragraph, index) => (
