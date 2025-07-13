@@ -23,10 +23,6 @@ const SummarizeLegalInformationOutputSchema = z.object({
 });
 export type SummarizeLegalInformationOutput = z.infer<typeof SummarizeLegalInformationOutputSchema>;
 
-export async function summarizeLegalInformation(input: SummarizeLegalInformationInput): Promise<SummarizeLegalInformationOutput> {
-  return summarizeLegalInformationFlow(input);
-}
-
 const prompt = ai.definePrompt({
   name: 'summarizeLegalInformationPrompt',
   input: {schema: SummarizeLegalInformationInputSchema},
@@ -69,3 +65,7 @@ const summarizeLegalInformationFlow = ai.defineFlow(
     return output!;
   }
 );
+
+export async function summarizeLegalInformation(input: SummarizeLegalInformationInput): Promise<SummarizeLegalInformationOutput> {
+  return summarizeLegalInformationFlow(input);
+}

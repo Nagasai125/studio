@@ -8,14 +8,16 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { summarizeLegalInformation, type SummarizeLegalInformationOutput } from "@/ai/flows/summarize-legal-information";
 import { extractLeaseClauses, type ExtractLeaseClausesOutput } from "@/ai/flows/extract-lease-clauses";
+import { analyzeText, type AnalyzeTextOutput } from "@/ai/flows/analyze-text";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Scale, Search, BookUser, Gavel, FileText, FileSignature, TriangleAlert, Link as LinkIcon, Loader2, Upload } from "lucide-react";
+import { Scale, Search, BookUser, Gavel, FileText, FileSignature, TriangleAlert, Link as LinkIcon, Loader2, Upload, MessageSquareText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -26,6 +28,10 @@ const legalQuestionSchema = z.object({
 
 const fileUploadSchema = z.object({
   file: z.instanceof(File).refine(file => file.size > 0, "Please select a file."),
+});
+
+const textAnalysisSchema = z.object({
+  textToAnalyze: z.string().min(10, "Please enter at least 10 characters to analyze."),
 });
 
 const topics = [
@@ -39,9 +45,12 @@ export default function LegalEasePage() {
   const [summary, setSummary] = useState<SummarizeLegalInformationOutput | null>(null);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   
-  const [analysis, setAnalysis] = useState<ExtractLeaseClausesOutput | null>(null);
-  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+  const [docAnalysis, setDocAnalysis] = useState<ExtractLeaseClausesOutput | null>(null);
+  const [isLoadingDocAnalysis, setIsLoadingDocAnalysis] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  const [textAnalysis, setTextAnalysis] = useState<AnalyzeTextOutput | null>(null);
+  const [isLoadingTextAnalysis, setIsLoadingTextAnalysis] = useState(false);
 
   const { toast } = useToast();
 
@@ -52,6 +61,11 @@ export default function LegalEasePage() {
 
   const fileUploadForm = useForm<z.infer<typeof fileUploadSchema>>({
     resolver: zodResolver(fileUploadSchema),
+  });
+
+  const textAnalysisForm = useForm<z.infer<typeof textAnalysisSchema>>({
+    resolver: zodResolver(textAnalysisSchema),
+    defaultValues: { textToAnalyze: "" },
   });
 
   async function onLegalQuestionSubmit(values: z.infer<typeof legalQuestionSchema>) {
@@ -91,12 +105,12 @@ export default function LegalEasePage() {
   }
 
   async function onFileUploadSubmit(values: z.infer<typeof fileUploadSchema>) {
-    setIsLoadingAnalysis(true);
-    setAnalysis(null);
+    setIsLoadingDocAnalysis(true);
+    setDocAnalysis(null);
     try {
       const dataUri = await fileToDataUri(values.file);
       const result = await extractLeaseClauses({ leaseAgreementDataUri: dataUri });
-      setAnalysis(result);
+      setDocAnalysis(result);
     } catch (error) {
       console.error(error);
       toast({
@@ -105,7 +119,25 @@ export default function LegalEasePage() {
         description: "Failed to analyze document. Please try again later.",
       });
     } finally {
-      setIsLoadingAnalysis(false);
+      setIsLoadingDocAnalysis(false);
+    }
+  }
+
+  async function onTextAnalysisSubmit(values: z.infer<typeof textAnalysisSchema>) {
+    setIsLoadingTextAnalysis(true);
+    setTextAnalysis(null);
+    try {
+      const result = await analyzeText(values);
+      setTextAnalysis(result);
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "An error occurred",
+        description: "Failed to analyze text. Please try again later.",
+      });
+    } finally {
+      setIsLoadingTextAnalysis(false);
     }
   }
   
@@ -152,9 +184,10 @@ export default function LegalEasePage() {
 
         <main className="mt-12">
           <Tabs defaultValue="question" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="question">Ask a Question</TabsTrigger>
               <TabsTrigger value="document">Analyze Document</TabsTrigger>
+              <TabsTrigger value="text">Analyze Text</TabsTrigger>
             </TabsList>
             <TabsContent value="question">
               <Card className="p-4 sm:p-6 shadow-lg border-2 border-transparent">
@@ -287,7 +320,7 @@ export default function LegalEasePage() {
                                 className="hidden"
                                 onChange={handleFileChange}
                                 accept=".pdf,.doc,.docx,.txt"
-                                disabled={isLoadingAnalysis}
+                                disabled={isLoadingDocAnalysis}
                               />
                               <Label
                                 htmlFor="file-upload"
@@ -313,8 +346,8 @@ export default function LegalEasePage() {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full h-12 text-lg" disabled={isLoadingAnalysis || !uploadedFile}>
-                      {isLoadingAnalysis ? (
+                    <Button type="submit" className="w-full h-12 text-lg" disabled={isLoadingDocAnalysis || !uploadedFile}>
+                      {isLoadingDocAnalysis ? (
                         <>
                           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                           Analyzing Document...
@@ -328,7 +361,7 @@ export default function LegalEasePage() {
               </Card>
 
               <AnimatePresence>
-                {isLoadingAnalysis && (
+                {isLoadingDocAnalysis && (
                   <motion.div
                     key="loader-analysis"
                     initial={{ opacity: 0, y: 20 }}
@@ -340,7 +373,7 @@ export default function LegalEasePage() {
                   </motion.div>
                 )}
 
-                {analysis && !isLoadingAnalysis && (
+                {docAnalysis && !isLoadingDocAnalysis && (
                    <motion.div
                     key="results-analysis"
                     initial={{ opacity: 0, y: 20 }}
@@ -352,9 +385,91 @@ export default function LegalEasePage() {
                         <CardTitle className="text-2xl font-headline">Key Clause Summary</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4 text-foreground/90">
-                         {analysis.summary.split('\n\n').flatMap(p => p.split('\n')).map((paragraph, index) => (
+                         {docAnalysis.summary.split('\n\n').flatMap(p => p.split('\n')).map((paragraph, index) => (
                            <p key={index}>{paragraph}</p>
                          ))}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </TabsContent>
+
+            <TabsContent value="text">
+              <Card className="p-4 sm:p-6 shadow-lg border-2 border-transparent">
+                <Form {...textAnalysisForm}>
+                  <form onSubmit={textAnalysisForm.handleSubmit(onTextAnalysisSubmit)} className="space-y-6">
+                    <FormField
+                      control={textAnalysisForm.control}
+                      name="textToAnalyze"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label htmlFor="text-analysis" className="font-semibold">Text to Analyze</Label>
+                          <FormControl>
+                            <div className="relative">
+                              <MessageSquareText className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                              <Textarea
+                                id="text-analysis"
+                                placeholder="Paste a message, a clause from a contract, or any other text here..."
+                                className="pl-10 pt-3 text-base min-h-[150px] resize-y"
+                                {...field}
+                                disabled={isLoadingTextAnalysis}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" className="w-full h-12 text-lg" disabled={isLoadingTextAnalysis}>
+                      {isLoadingTextAnalysis ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Analyzing Text...
+                        </>
+                      ) : (
+                        "Analyze Text"
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              </Card>
+
+              <AnimatePresence>
+                {isLoadingTextAnalysis && (
+                  <motion.div
+                    key="loader-text-analysis"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <ResultSkeleton />
+                  </motion.div>
+                )}
+
+                {textAnalysis && !isLoadingTextAnalysis && (
+                   <motion.div
+                    key="results-text-analysis"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <Card className="mt-8 w-full shadow-lg">
+                      <CardHeader>
+                         <Alert className="border-accent border-l-4 rounded-r-lg bg-accent/10">
+                          <TriangleAlert className="h-4 w-4 text-accent-foreground" />
+                          <AlertTitle className="font-semibold text-accent-foreground">Disclaimer</AlertTitle>
+                          <AlertDescription>{textAnalysis.disclaimer}</AlertDescription>
+                        </Alert>
+                      </CardHeader>
+                      <CardContent>
+                        <CardTitle className="mb-4 text-2xl font-headline">Analysis</CardTitle>
+                        <div className="space-y-4 text-foreground/90">
+                           {textAnalysis.analysis.split('\n\n').flatMap(p => p.split('\n')).map((paragraph, index) => (
+                             <p key={index}>{paragraph}</p>
+                           ))}
+                        </div>
                       </CardContent>
                     </Card>
                   </motion.div>

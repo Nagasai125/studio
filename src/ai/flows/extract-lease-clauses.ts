@@ -24,10 +24,6 @@ const ExtractLeaseClausesOutputSchema = z.object({
 });
 export type ExtractLeaseClausesOutput = z.infer<typeof ExtractLeaseClausesOutputSchema>;
 
-export async function extractLeaseClauses(input: ExtractLeaseClausesInput): Promise<ExtractLeaseClausesOutput> {
-  return extractLeaseClausesFlow(input);
-}
-
 const prompt = ai.definePrompt({
   name: 'extractLeaseClausesPrompt',
   input: {schema: ExtractLeaseClausesInputSchema},
@@ -49,3 +45,7 @@ const extractLeaseClausesFlow = ai.defineFlow(
     return output!;
   }
 );
+
+export async function extractLeaseClauses(input: ExtractLeaseClausesInput): Promise<ExtractLeaseClausesOutput> {
+  return extractLeaseClausesFlow(input);
+}
