@@ -20,7 +20,9 @@ const ExtractLeaseClausesInputSchema = z.object({
 export type ExtractLeaseClausesInput = z.infer<typeof ExtractLeaseClausesInputSchema>;
 
 const ExtractLeaseClausesOutputSchema = z.object({
-  summary: z.string().describe('A summary of the key clauses in the lease agreement.'),
+  isSpam: z.boolean().describe('Whether the document is considered spam, irrelevant, or not a document.'),
+  spamReason: z.string().optional().describe('The reason why the document is considered spam. Only present if isSpam is true.'),
+  summary: z.string().optional().describe('A summary of the key clauses in the lease agreement.'),
 });
 export type ExtractLeaseClausesOutput = z.infer<typeof ExtractLeaseClausesOutputSchema>;
 
@@ -28,7 +30,11 @@ const prompt = ai.definePrompt({
   name: 'extractLeaseClausesPrompt',
   input: {schema: ExtractLeaseClausesInputSchema},
   output: {schema: ExtractLeaseClausesOutputSchema},
-  prompt: `You are a U.S.-based AI assistant called CaseMate that provides neutral, easy-to-understand general legal information. I am not a lawyer and this is not legal advice. I can only provide general legal information. You will now analyze the following lease agreement to provide a summary of the key clauses, focusing on tenant responsibilities and rights.
+  prompt: `You are a U.S.-based AI assistant called CaseMate. Your first task is to determine if the provided document is a valid legal document (like a lease) or if it's spam, irrelevant, or nonsensical.
+
+If the document appears to be spam, irrelevant (e.g., a photo of a cat), or not a readable document, set isSpam to true, provide a brief reason, and do not proceed with the analysis.
+
+If the document is a valid lease agreement, set isSpam to false and proceed with your primary function: analyze the lease agreement to provide a summary of the key clauses, focusing on tenant responsibilities and rights. I am not a lawyer and this is not legal advice. I can only provide general legal information.
 
 Lease Agreement: {{media url=leaseAgreementDataUri}}
 `,

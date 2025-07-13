@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Scale, Search, BookUser, Gavel, FileText, FileSignature, TriangleAlert, Link as LinkIcon, Loader2, Upload, MessageSquareText } from "lucide-react";
+import { Scale, Search, BookUser, Gavel, FileText, FileSignature, TriangleAlert, Link as LinkIcon, Loader2, Upload, MessageSquareText, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -157,6 +157,20 @@ export default function LegalEasePage() {
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-5/6" />
         </div>
+      </CardContent>
+    </Card>
+  );
+
+  const SpamCard = ({ reason }: { reason?: string }) => (
+    <Card className="mt-8 w-full shadow-lg border-destructive/50">
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <ShieldAlert className="h-8 w-8 text-destructive" />
+          <CardTitle className="text-2xl font-headline text-destructive">Content Flagged</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="text-foreground/90">{reason || "This content was flagged as irrelevant or spam and could not be processed."}</p>
       </CardContent>
     </Card>
   );
@@ -380,16 +394,20 @@ export default function LegalEasePage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                   >
-                    <Card className="mt-8 w-full shadow-lg">
-                      <CardHeader>
-                        <CardTitle className="text-2xl font-headline">Key Clause Summary</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4 text-foreground/90">
-                         {docAnalysis.summary.split('\n\n').flatMap(p => p.split('\n')).map((paragraph, index) => (
-                           <p key={index}>{paragraph}</p>
-                         ))}
-                      </CardContent>
-                    </Card>
+                    {docAnalysis.isSpam ? (
+                      <SpamCard reason={docAnalysis.spamReason} />
+                    ) : (
+                      <Card className="mt-8 w-full shadow-lg">
+                        <CardHeader>
+                          <CardTitle className="text-2xl font-headline">Key Clause Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 text-foreground/90">
+                           {docAnalysis.summary?.split('\n\n').flatMap(p => p.split('\n')).map((paragraph, index) => (
+                             <p key={index}>{paragraph}</p>
+                           ))}
+                        </CardContent>
+                      </Card>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -455,23 +473,27 @@ export default function LegalEasePage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                   >
-                    <Card className="mt-8 w-full shadow-lg">
-                      <CardHeader>
-                         <Alert className="border-accent border-l-4 rounded-r-lg bg-accent/10">
-                          <TriangleAlert className="h-4 w-4 text-accent-foreground" />
-                          <AlertTitle className="font-semibold text-accent-foreground">Disclaimer</AlertTitle>
-                          <AlertDescription>{textAnalysis.disclaimer}</AlertDescription>
-                        </Alert>
-                      </CardHeader>
-                      <CardContent>
-                        <CardTitle className="mb-4 text-2xl font-headline">Analysis</CardTitle>
-                        <div className="space-y-4 text-foreground/90">
-                           {textAnalysis.analysis.split('\n\n').flatMap(p => p.split('\n')).map((paragraph, index) => (
-                             <p key={index}>{paragraph}</p>
-                           ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    {textAnalysis.isSpam ? (
+                      <SpamCard reason={textAnalysis.spamReason} />
+                    ) : (
+                      <Card className="mt-8 w-full shadow-lg">
+                        <CardHeader>
+                          <Alert className="border-accent border-l-4 rounded-r-lg bg-accent/10">
+                            <TriangleAlert className="h-4 w-4 text-accent-foreground" />
+                            <AlertTitle className="font-semibold text-accent-foreground">Disclaimer</AlertTitle>
+                            <AlertDescription>{textAnalysis.disclaimer}</AlertDescription>
+                          </Alert>
+                        </CardHeader>
+                        <CardContent>
+                          <CardTitle className="mb-4 text-2xl font-headline">Analysis</CardTitle>
+                          <div className="space-y-4 text-foreground/90">
+                            {textAnalysis.analysis?.split('\n\n').flatMap(p => p.split('\n')).map((paragraph, index) => (
+                              <p key={index}>{paragraph}</p>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
