@@ -39,10 +39,19 @@ const prompt = ai.definePrompt({
 
 2.  **Document Analysis:** If the document is not spam, proceed with your primary function.
     *   Begin the 'summary' with the disclaimer: "I am not a lawyer and this is not legal advice. I can only provide general legal information based on the document provided."
-    *   Next, identify the type of document (e.g., "Residential Lease Agreement," "Traffic Violation Notice").
+    *   Next, identify the type of document (e.g., "Residential Lease Agreement," "Uniform Traffic Citation").
     *   Then, extract and summarize the key information in a clear, easy-to-understand format. Use bullet points for clarity where appropriate.
+
         *   **If it's a lease:** Focus on key clauses like rent amount and due date, lease term, security deposit, maintenance responsibilities (who fixes what), and rules on pets or guests.
-        *   **If it's a traffic violation:** Explain the specific violation, the fine amount, the due date for payment, and any options presented (e.g., paying the fine, contesting the ticket, traffic school).
+        *   **If it's a traffic violation:** Extract the following information and format it clearly. If a piece of information is not present, state that.
+            *   **Violation:** What is the specific offense? (e.g., "Speeding")
+            *   **Citation Number:** Find the citation or ticket number.
+            *   **Date of Violation:** When did the violation occur?
+            *   **Court Date and Time:** When and what time is the court appearance?
+            *   **Court Location:** Provide the full address and phone number of the court.
+            *   **Fine Amount:** Is there a fine amount listed? If not, state that the fine amount is not specified on the document.
+            *   **Options:** What options are presented? (e.g., paying the fine, contesting the ticket, traffic school). Explain the notice about potential license suspension for failure to appear.
+
     *   Structure your summary logically. Present the most critical information first.
 
 Analyze the following document based on these rules.
