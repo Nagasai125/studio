@@ -11,6 +11,7 @@ import { summarizeLegalInformation, type SummarizeLegalInformationOutput } from 
 import { extractLeaseClauses, type ExtractLeaseClausesOutput } from "@/ai/flows/extract-lease-clauses";
 import { analyzeText, type AnalyzeTextOutput } from "@/ai/flows/analyze-text";
 import { answerDocumentQuestion, type AnswerDocumentQuestionOutput } from "@/ai/flows/answer-document-question";
+import { extractDocumentText } from "@/ai/flows/extract-document-text";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +55,7 @@ export default function LegalEasePage() {
   const [docAnalysis, setDocAnalysis] = useState<ExtractLeaseClausesOutput | null>(null);
   const [isLoadingDocAnalysis, setIsLoadingDocAnalysis] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [extractedDocText, setExtractedDocText] = useState<string | null>(null);
 
   const [textAnalysis, setTextAnalysis] = useState<AnalyzeTextOutput | null>(null);
   const [isLoadingTextAnalysis, setIsLoadingTextAnalysis] = useState(false);
@@ -105,6 +107,8 @@ export default function LegalEasePage() {
     const file = event.target.files?.[0];
     if (file) {
       setUploadedFile(file);
+      setDocAnalysis(null);
+      setExtractedDocText(null);
       setFollowUpAnswer(null); 
       followUpQuestionForm.reset();
       fileUploadForm.setValue("file", file);
@@ -124,12 +128,23 @@ export default function LegalEasePage() {
   async function onFileUploadSubmit(values: z.infer<typeof fileUploadSchema>) {
     setIsLoadingDocAnalysis(true);
     setDocAnalysis(null);
+    setExtractedDocText(null);
     setFollowUpAnswer(null);
     followUpQuestionForm.reset();
     try {
       const dataUri = await fileToDataUri(values.file);
-      const result = await extractLeaseClauses({ leaseAgreementDataUri: dataUri });
-      setDocAnalysis(result);
+      
+      // We now run two flows in parallel: one to extract structured data, one to get raw text
+      const [analysisResult, textResult] = await Promise.all([
+        extractLeaseClauses({ leaseAgreementDataUri: dataUri }),
+        extractDocumentText({ documentDataUri: dataUri })
+      ]);
+      
+      setDocAnalysis(analysisResult);
+      if (textResult) {
+        setExtractedDocText(textResult.documentText);
+      }
+
     } catch (error) {
       console.error(error);
       toast({
@@ -161,12 +176,12 @@ export default function LegalEasePage() {
   }
 
   async function onFollowUpQuestionSubmit(values: z.infer<typeof followUpQuestionSchema>) {
-    if (!docAnalysis?.summary) return;
+    if (!extractedDocText) return;
     setIsLoadingFollowUp(true);
     setFollowUpAnswer(null);
     try {
       const result = await answerDocumentQuestion({
-        documentContext: docAnalysis.summary,
+        documentText: extractedDocText,
         question: values.followUpQuestion
       });
       setFollowUpAnswer(result);
@@ -450,43 +465,45 @@ export default function LegalEasePage() {
                            ))}
                         </CardContent>
                         
-                        <CardFooter className="flex-col items-start gap-4 border-t pt-6">
-                            <h3 className="text-lg font-semibold font-headline">Ask a Follow-up Question</h3>
-                            <Form {...followUpQuestionForm}>
-                              <form onSubmit={followUpQuestionForm.handleSubmit(onFollowUpQuestionSubmit)} className="w-full space-y-4">
-                                <FormField
-                                  control={followUpQuestionForm.control}
-                                  name="followUpQuestion"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormControl>
-                                        <div className="relative">
-                                          <HelpCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                          <Input
-                                            placeholder="e.g., 'What is the fine amount?'"
-                                            className="pl-10 text-base h-12"
-                                            {...field}
-                                            disabled={isLoadingFollowUp}
-                                          />
-                                        </div>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <Button type="submit" className="w-full h-12 text-lg" disabled={isLoadingFollowUp}>
-                                  {isLoadingFollowUp ? (
-                                    <>
-                                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                      Thinking...
-                                    </>
-                                  ) : (
-                                    "Ask Question"
-                                  )}
-                                </Button>
-                              </form>
-                            </Form>
-                        </CardFooter>
+                        {extractedDocText && 
+                          <CardFooter className="flex-col items-start gap-4 border-t pt-6">
+                              <h3 className="text-lg font-semibold font-headline">Ask a Follow-up Question</h3>
+                              <Form {...followUpQuestionForm}>
+                                <form onSubmit={followUpQuestionForm.handleSubmit(onFollowUpQuestionSubmit)} className="w-full space-y-4">
+                                  <FormField
+                                    control={followUpQuestionForm.control}
+                                    name="followUpQuestion"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormControl>
+                                          <div className="relative">
+                                            <HelpCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                            <Input
+                                              placeholder="e.g., 'What is the fine amount?'"
+                                              className="pl-10 text-base h-12"
+                                              {...field}
+                                              disabled={isLoadingFollowUp}
+                                            />
+                                          </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <Button type="submit" className="w-full h-12 text-lg" disabled={isLoadingFollowUp}>
+                                    {isLoadingFollowUp ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                        Thinking...
+                                      </>
+                                    ) : (
+                                      "Ask Question"
+                                    )}
+                                  </Button>
+                                </form>
+                              </Form>
+                          </CardFooter>
+                        }
                       </Card>
                     )}
                   </motion.div>

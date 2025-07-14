@@ -13,7 +13,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AnswerDocumentQuestionInputSchema = z.object({
-  documentContext: z.string().describe('The text content or summary of the document to be queried.'),
+  documentText: z.string().describe('The full text content of the document to be queried.'),
   question: z.string().describe('The user\'s follow-up question about the document.'),
 });
 export type AnswerDocumentQuestionInput = z.infer<typeof AnswerDocumentQuestionInputSchema>;
@@ -28,17 +28,17 @@ const prompt = ai.definePrompt({
   name: 'answerDocumentQuestionPrompt',
   input: {schema: AnswerDocumentQuestionInputSchema},
   output: {schema: AnswerDocumentQuestionOutputSchema},
-  prompt: `You are CaseMate, a helpful U.S.-based AI paralegal. Your task is to answer a user's question based *only* on the provided document context.
+  prompt: `You are CaseMate, a helpful U.S.-based AI paralegal. Your task is to answer a user's question based *only* on the provided document text.
 
 **Rules:**
-1.  Your primary goal is to answer the user's question using the information found in the "Document Context" below.
+1.  Your primary goal is to answer the user's question using the information found in the "Document Text" below.
 2.  Begin your 'answer' with a friendly and direct response.
-3.  If the answer to the question cannot be found in the document context, you must state: "I cannot find the answer to that question in the document provided." Do not use outside knowledge.
+3.  If the answer to the question cannot be found in the document, you must state: "I cannot find the answer to that question in the document provided." Do not use outside knowledge.
 4.  Always populate the 'disclaimer' field with: "I am not a lawyer and this is not legal advice. I can only provide general legal information based on the document provided."
 
-**Document Context:**
+**Document Text:**
 """
-{{{documentContext}}}
+{{{documentText}}}
 """
 
 **User's Question:**
