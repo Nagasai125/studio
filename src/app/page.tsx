@@ -375,8 +375,6 @@ export default function LegalEasePage() {
                 )}
               </AnimatePresence>
             </TabsContent>
-            
-//commen
 
             <TabsContent value="document">
               <Card className="p-4 sm:p-6 shadow-lg border-2 border-transparent">
