@@ -133,6 +133,18 @@ export default function LegalEasePage() {
     setExtractedDocText(null);
     setFollowUpAnswer(null);
     followUpQuestionForm.reset();
+    
+    // Check file size (5MB limit for Netlify)
+    if (values.file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File Too Large",
+        description: "Please upload a file smaller than 5MB.",
+      });
+      setIsLoadingDocAnalysis(false);
+      return;
+    }
+    
     try {
       const dataUri = await fileToDataUri(values.file);
       
@@ -148,11 +160,11 @@ export default function LegalEasePage() {
       }
 
     } catch (error) {
-      console.error(error);
+      console.error('Document analysis error:', error);
       toast({
         variant: "destructive",
-        title: "An error occurred",
-        description: "Failed to analyze document. Please try again later.",
+        title: "Document Analysis Failed",
+        description: error instanceof Error ? error.message : "Failed to analyze document. Try a smaller file or different format.",
       });
     } finally {
       setIsLoadingDocAnalysis(false);
