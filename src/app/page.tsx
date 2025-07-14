@@ -30,7 +30,9 @@ const legalQuestionSchema = z.object({
 });
 
 const fileUploadSchema = z.object({
-  file: z.instanceof(File).refine(file => file.size > 0, "Please select a file."),
+  file: typeof window !== 'undefined' 
+    ? z.instanceof(File).refine(file => file.size > 0, "Please select a file.")
+    : z.any(),
 });
 
 const textAnalysisSchema = z.object({
