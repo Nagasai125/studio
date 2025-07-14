@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { summarizeLegalInformation, type SummarizeLegalInformationOutput } from "@/ai/flows/summarize-legal-information";
 import { extractLeaseClauses, type ExtractLeaseClausesOutput } from "@/ai/flows/extract-lease-clauses";
 import { analyzeText, type AnalyzeTextOutput } from "@/ai/flows/analyze-text";
+import { answerDocumentQuestion, type AnswerDocumentQuestionOutput } from "@/ai/flows/answer-document-question";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Scale, Search, BookUser, Gavel, FileText, FileSignature, TriangleAlert, Link as LinkIcon, Loader2, Upload, MessageSquareText, ShieldAlert, Car } from "lucide-react";
+import { Scale, Search, BookUser, Gavel, FileText, FileSignature, TriangleAlert, Link as LinkIcon, Loader2, Upload, MessageSquareText, ShieldAlert, Car, HelpCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,10 @@ const fileUploadSchema = z.object({
 
 const textAnalysisSchema = z.object({
   textToAnalyze: z.string().min(1, "Please enter some text to analyze."),
+});
+
+const followUpQuestionSchema = z.object({
+  followUpQuestion: z.string().min(1, "Please enter a question."),
 });
 
 const topics = [
@@ -53,6 +58,10 @@ export default function LegalEasePage() {
   const [textAnalysis, setTextAnalysis] = useState<AnalyzeTextOutput | null>(null);
   const [isLoadingTextAnalysis, setIsLoadingTextAnalysis] = useState(false);
 
+  const [followUpAnswer, setFollowUpAnswer] = useState<AnswerDocumentQuestionOutput | null>(null);
+  const [isLoadingFollowUp, setIsLoadingFollowUp] = useState(false);
+
+
   const { toast } = useToast();
 
   const legalQuestionForm = useForm<z.infer<typeof legalQuestionSchema>>({
@@ -67,6 +76,11 @@ export default function LegalEasePage() {
   const textAnalysisForm = useForm<z.infer<typeof textAnalysisSchema>>({
     resolver: zodResolver(textAnalysisSchema),
     defaultValues: { textToAnalyze: "" },
+  });
+
+  const followUpQuestionForm = useForm<z.infer<typeof followUpQuestionSchema>>({
+    resolver: zodResolver(followUpQuestionSchema),
+    defaultValues: { followUpQuestion: "" },
   });
 
   async function onLegalQuestionSubmit(values: z.infer<typeof legalQuestionSchema>) {
@@ -91,6 +105,8 @@ export default function LegalEasePage() {
     const file = event.target.files?.[0];
     if (file) {
       setUploadedFile(file);
+      setFollowUpAnswer(null); 
+      followUpQuestionForm.reset();
       fileUploadForm.setValue("file", file);
       fileUploadForm.clearErrors("file");
     }
@@ -108,6 +124,8 @@ export default function LegalEasePage() {
   async function onFileUploadSubmit(values: z.infer<typeof fileUploadSchema>) {
     setIsLoadingDocAnalysis(true);
     setDocAnalysis(null);
+    setFollowUpAnswer(null);
+    followUpQuestionForm.reset();
     try {
       const dataUri = await fileToDataUri(values.file);
       const result = await extractLeaseClauses({ leaseAgreementDataUri: dataUri });
@@ -139,6 +157,28 @@ export default function LegalEasePage() {
       });
     } finally {
       setIsLoadingTextAnalysis(false);
+    }
+  }
+
+  async function onFollowUpQuestionSubmit(values: z.infer<typeof followUpQuestionSchema>) {
+    if (!docAnalysis?.summary) return;
+    setIsLoadingFollowUp(true);
+    setFollowUpAnswer(null);
+    try {
+      const result = await answerDocumentQuestion({
+        documentContext: docAnalysis.summary,
+        question: values.followUpQuestion
+      });
+      setFollowUpAnswer(result);
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "An error occurred",
+        description: "Failed to answer the question. Please try again later.",
+      });
+    } finally {
+      setIsLoadingFollowUp(false);
     }
   }
   
@@ -409,8 +449,85 @@ export default function LegalEasePage() {
                              <p key={index}>{paragraph}</p>
                            ))}
                         </CardContent>
+                        
+                        <CardFooter className="flex-col items-start gap-4 border-t pt-6">
+                            <h3 className="text-lg font-semibold font-headline">Ask a Follow-up Question</h3>
+                            <Form {...followUpQuestionForm}>
+                              <form onSubmit={followUpQuestionForm.handleSubmit(onFollowUpQuestionSubmit)} className="w-full space-y-4">
+                                <FormField
+                                  control={followUpQuestionForm.control}
+                                  name="followUpQuestion"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormControl>
+                                        <div className="relative">
+                                          <HelpCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                          <Input
+                                            placeholder="e.g., 'What is the fine amount?'"
+                                            className="pl-10 text-base h-12"
+                                            {...field}
+                                            disabled={isLoadingFollowUp}
+                                          />
+                                        </div>
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <Button type="submit" className="w-full h-12 text-lg" disabled={isLoadingFollowUp}>
+                                  {isLoadingFollowUp ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                      Thinking...
+                                    </>
+                                  ) : (
+                                    "Ask Question"
+                                  )}
+                                </Button>
+                              </form>
+                            </Form>
+                        </CardFooter>
                       </Card>
                     )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              <AnimatePresence>
+                {isLoadingFollowUp && (
+                  <motion.div
+                    key="loader-follow-up"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                  >
+                    <ResultSkeleton />
+                  </motion.div>
+                )}
+
+                {followUpAnswer && !isLoadingFollowUp && (
+                  <motion.div
+                    key="results-follow-up"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <Card className="mt-8 w-full shadow-lg">
+                      <CardHeader>
+                        <Alert className="border-accent border-l-4 rounded-r-lg bg-accent/10">
+                          <TriangleAlert className="h-4 w-4 text-accent-foreground" />
+                          <AlertTitle className="font-semibold text-accent-foreground">Disclaimer</AlertTitle>
+                          <AlertDescription>{followUpAnswer.disclaimer}</AlertDescription>
+                        </Alert>
+                      </CardHeader>
+                      <CardContent>
+                        <CardTitle className="mb-4 text-2xl font-headline">Answer</CardTitle>
+                        <div className="space-y-4 text-foreground/90">
+                          {followUpAnswer.answer.split('\n').map((paragraph, index) => (
+                            <p key={index}>{paragraph}</p>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
                   </motion.div>
                 )}
               </AnimatePresence>
