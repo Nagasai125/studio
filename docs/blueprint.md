@@ -1,4 +1,4 @@
-# **App Name**: LegalEase
+# **App Name**: LegalBee
 
 ## Core Features:
 

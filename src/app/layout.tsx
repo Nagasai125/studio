@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'LegalEase',
+  title: 'LegalBee',
   description: 'Your AI-powered assistant for clear, general legal information.',
 };
 

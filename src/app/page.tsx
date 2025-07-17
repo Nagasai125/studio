@@ -50,7 +50,7 @@ const topics = [
   { name: "Traffic violations", icon: Car, query: "What should I do if I get a speeding ticket?" },
 ];
 
-export default function LegalEasePage() {
+export default function LegalBeePage() {
   const [summary, setSummary] = useState<SummarizeLegalInformationOutput | null>(null);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   
@@ -261,7 +261,7 @@ export default function LegalEasePage() {
             </div>
           </motion.div>
           <h1 className="font-headline text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl">
-            LegalEase
+            LegalBee
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
             Your AI assistant for clear, easy-to-understand general legal information.

@@ -1,8 +1,8 @@
-# LegalEase 🏛️
+# LegalBee 🏛️
 
 **Your AI assistant for clear, easy-to-understand general legal information.**
 
-LegalEase is a modern web application that helps users understand basic legal concepts and analyze documents using AI. Built with Next.js and powered by Google's Gemini AI, it provides accessible legal information in plain English.
+LegalBee is a modern web application that helps users understand basic legal concepts and analyze documents using AI. Built with Next.js and powered by Google's Gemini AI, it provides accessible legal information in plain English.
 
 ## 🌟 Features
 
