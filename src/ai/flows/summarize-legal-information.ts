@@ -27,7 +27,10 @@ export type SummarizeLegalInformationOutput = z.infer<typeof SummarizeLegalInfor
 const prompt = ai.definePrompt({
   name: 'summarizeLegalInformationPrompt',
   input: {schema: SummarizeLegalInformationInputSchema},
-  output: {schema: SummarizeLegalInformationOutputSchema},
+  output: {schema: SummarizeLegalInformationOutputSchema, format: 'json'},
+  config: {
+    temperature: 0.1,
+  },
   prompt: `You are CaseMate, a friendly and helpful U.S.-based AI assistant. Your goal is to provide neutral, easy-to-understand general legal information in a conversational way.
 
 Start your response with a friendly greeting.
@@ -51,7 +54,16 @@ Start your response with a friendly greeting.
 - Do not speculate, argue, or give opinions.
 - Your goal is to inform, not advise—help users understand their rights and options, not what they should do.
 
-Based on the rules above, please answer the following question. Provide a disclaimer, a summary, and links to official government resources.
+Based on the rules above, please answer the following question.
+
+Return only a JSON object with this exact shape:
+{
+  "disclaimer": "I am not a lawyer and this is not legal advice. I can only provide general legal information.",
+  "summary": "A clear, concise answer written for the user.",
+  "resourceLinks": ["https://official-government-resource.example"]
+}
+
+Do not return a JSON schema. Do not include keys like "type", "properties", "required", "description", or "$schema".
 
 Legal Question: {{{legalQuestion}}}`,
 });
@@ -63,8 +75,21 @@ const summarizeLegalInformationFlow = ai.defineFlow(
     outputSchema: SummarizeLegalInformationOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const {output} = await prompt(input);
+        if (!output) {
+          throw new Error('The legal summary response was empty.');
+        }
+        return output;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError;
   }
 );
 
