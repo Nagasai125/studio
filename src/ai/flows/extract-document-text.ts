@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {extractTextFromDocumentDataUri} from '@/ai/document-text';
 import {z} from 'genkit';
 
 const ExtractDocumentTextInputSchema = z.object({
@@ -25,16 +26,6 @@ const ExtractDocumentTextOutputSchema = z.object({
 });
 export type ExtractDocumentTextOutput = z.infer<typeof ExtractDocumentTextOutputSchema>;
 
-const prompt = ai.definePrompt({
-  name: 'extractDocumentTextPrompt',
-  input: {schema: ExtractDocumentTextInputSchema},
-  output: {schema: ExtractDocumentTextOutputSchema},
-  prompt: `Extract all text from the following document and return it in the documentText field.
-
-Document: {{media url=documentDataUri}}
-`,
-});
-
 const extractDocumentTextFlow = ai.defineFlow(
   {
     name: 'extractDocumentTextFlow',
@@ -42,8 +33,9 @@ const extractDocumentTextFlow = ai.defineFlow(
     outputSchema: ExtractDocumentTextOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    return {
+      documentText: await extractTextFromDocumentDataUri(input.documentDataUri),
+    };
   }
 );
 

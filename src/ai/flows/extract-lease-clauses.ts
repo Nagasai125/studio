@@ -9,7 +9,11 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {extractTextFromDocumentDataUri} from '@/ai/document-text';
+import Groq from 'groq-sdk';
 import {z} from 'genkit';
+
+const GROQ_TEXT_MODEL = 'llama-3.3-70b-versatile';
 
 const ExtractLeaseClausesInputSchema = z.object({
   leaseAgreementDataUri: z
@@ -27,11 +31,25 @@ const ExtractLeaseClausesOutputSchema = z.object({
 });
 export type ExtractLeaseClausesOutput = z.infer<typeof ExtractLeaseClausesOutputSchema>;
 
-const prompt = ai.definePrompt({
-  name: 'extractLeaseClausesPrompt',
-  input: {schema: ExtractLeaseClausesInputSchema},
-  output: {schema: ExtractLeaseClausesOutputSchema},
-  prompt: `You are CaseMate, a helpful U.S.-based AI paralegal. Your task is a two-step process:
+async function analyzeDocumentText(documentText: string): Promise<ExtractLeaseClausesOutput> {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error('GROQ_API_KEY is required to analyze document uploads.');
+  }
+
+  const client = new Groq({apiKey: process.env.GROQ_API_KEY});
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await client.chat.completions.create({
+        model: GROQ_TEXT_MODEL,
+        temperature: 0.1,
+        max_completion_tokens: 2048,
+        response_format: {type: 'json_object'},
+        messages: [
+          {
+            role: 'user',
+            content: `You are CaseMate, a helpful U.S.-based AI paralegal. Your task is a two-step process:
 
 1.  **Spam Check:** First, examine the document to determine if it is a legitimate legal document (like a lease or traffic ticket) or if it's spam, irrelevant, or nonsensical.
     *   If it is spam, set 'isSpam' to true and provide a brief reason in 'spamReason'. In a new paragraph, also provide a few brief, general tips on how to identify and avoid this type of spam. Do not proceed further.
@@ -56,9 +74,41 @@ const prompt = ai.definePrompt({
 
 Analyze the following document based on these rules.
 
-Document: {{media url=leaseAgreementDataUri}}
-`,
-});
+Return only a valid JSON object with this exact shape:
+{
+  "isSpam": false,
+  "summary": "A clear document summary for the user."
+}
+
+If the document is spam or not a legal document, return:
+{
+  "isSpam": true,
+  "spamReason": "A short explanation."
+}
+
+Do not return markdown. Do not return a JSON schema. Do not include keys like "type", "properties", "required", "description", or "$schema".
+
+Document text:
+"""
+${documentText}
+"""`,
+          },
+        ],
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('The document analysis response was empty.');
+      }
+
+      return ExtractLeaseClausesOutputSchema.parse(JSON.parse(content));
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
 
 const extractLeaseClausesFlow = ai.defineFlow(
   {
@@ -67,8 +117,8 @@ const extractLeaseClausesFlow = ai.defineFlow(
     outputSchema: ExtractLeaseClausesOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const documentText = await extractTextFromDocumentDataUri(input.leaseAgreementDataUri);
+    return analyzeDocumentText(documentText);
   }
 );
 
